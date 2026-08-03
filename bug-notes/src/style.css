@@ -125,6 +125,9 @@ h1 {
 .bug-filters {
   display: flex;
   gap: 6px;
+  margin-bottom: 8px;
+}
+.severity-filters {
   margin-bottom: 16px;
 }
 
@@ -199,6 +202,34 @@ h1 {
 .bug-badge.fixed {
   background: var(--fixed-bg);
   color: var(--fixed-text);
+}
+
+/* severity badges */
+.bug-badge.severity-low {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.bug-badge.severity-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+.bug-badge.severity-high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+@media (prefers-color-scheme: dark) {
+  .bug-badge.severity-low {
+    background: #1e3a5f;
+    color: #93c5fd;
+  }
+  .bug-badge.severity-medium {
+    background: #78350f;
+    color: #fde68a;
+  }
+  .bug-badge.severity-high {
+    background: #7f1d1d;
+    color: #fca5a5;
+  }
 }
 
 .bug-toggle {

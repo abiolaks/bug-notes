@@ -2,12 +2,15 @@ import './style.css'
 
 // ── Types ──────────────────────────────────────────
 type BugStatus = 'open' | 'fixed'
-type Filter = 'all' | BugStatus
+type Severity = 'low' | 'medium' | 'high'
+type StatusFilter = 'all' | BugStatus
+type SeverityFilter = 'all' | Severity
 
 interface Bug {
   id: number
   title: string
   status: BugStatus
+  severity: Severity
 }
 
 // ── State ──────────────────────────────────────────
@@ -15,7 +18,8 @@ const STORAGE_KEY = 'bug-notes'
 
 let bugs: Bug[] = []
 let nextId = 1
-let filter: Filter = 'all'
+let statusFilter: StatusFilter = 'all'
+let severityFilter: SeverityFilter = 'all'
 let error = ''
 
 function loadBugs(): void {
@@ -23,7 +27,7 @@ function loadBugs(): void {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
     const data = JSON.parse(raw)
-    bugs = data.bugs ?? []
+    bugs = (data.bugs ?? []).map((b: Bug) => ({ ...b, severity: b.severity ?? 'medium' }))
     nextId = data.nextId ?? 1
   } catch { /* corrupted data — start fresh */ }
 }
@@ -37,9 +41,14 @@ const app = document.querySelector<HTMLDivElement>('#app')!
 
 // ── Render ─────────────────────────────────────────
 function render(): void {
-  const filtered = filter === 'all' ? bugs : bugs.filter(b => b.status === filter)
+  const byStatus = statusFilter === 'all' ? bugs : bugs.filter(b => b.status === statusFilter)
+  const filtered = severityFilter === 'all' ? byStatus : byStatus.filter(b => b.severity === severityFilter)
+
   const openCount = bugs.filter(b => b.status === 'open').length
   const fixedCount = bugs.filter(b => b.status === 'fixed').length
+  const lowCount = bugs.filter(b => b.severity === 'low').length
+  const medCount = bugs.filter(b => b.severity === 'medium').length
+  const highCount = bugs.filter(b => b.severity === 'high').length
 
   app.innerHTML = `
     <div class="bug-tracker">
@@ -58,20 +67,40 @@ function render(): void {
           <option value="open">Open</option>
           <option value="fixed">Fixed</option>
         </select>
+        <select id="bug-severity" class="bug-select">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
         <button type="submit" class="bug-btn">Add</button>
       </form>
 
       ${error ? `<p class="bug-error">${error}</p>` : ''}
 
       <div class="bug-filters">
-        <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">
+        <button class="filter-btn ${statusFilter === 'all' ? 'active' : ''}" data-status="all">
           All (${bugs.length})
         </button>
-        <button class="filter-btn ${filter === 'open' ? 'active' : ''}" data-filter="open">
+        <button class="filter-btn ${statusFilter === 'open' ? 'active' : ''}" data-status="open">
           Open (${openCount})
         </button>
-        <button class="filter-btn ${filter === 'fixed' ? 'active' : ''}" data-filter="fixed">
+        <button class="filter-btn ${statusFilter === 'fixed' ? 'active' : ''}" data-status="fixed">
           Fixed (${fixedCount})
+        </button>
+      </div>
+
+      <div class="bug-filters severity-filters">
+        <button class="filter-btn ${severityFilter === 'all' ? 'active' : ''}" data-severity="all">
+          Any severity
+        </button>
+        <button class="filter-btn ${severityFilter === 'low' ? 'active' : ''}" data-severity="low">
+          Low (${lowCount})
+        </button>
+        <button class="filter-btn ${severityFilter === 'medium' ? 'active' : ''}" data-severity="medium">
+          Medium (${medCount})
+        </button>
+        <button class="filter-btn ${severityFilter === 'high' ? 'active' : ''}" data-severity="high">
+          High (${highCount})
         </button>
       </div>
 
@@ -79,10 +108,11 @@ function render(): void {
         ${bugs.length === 0
           ? '<li class="bug-empty">No bug notes yet — add one above 👆</li>'
           : filtered.length === 0
-            ? '<li class="bug-empty">No bugs match this filter</li>'
+            ? '<li class="bug-empty">No bugs match these filters</li>'
             : filtered.map(bug => `
             <li class="bug-item ${bug.status}">
               <span class="bug-title-text">${escapeHtml(bug.title)}</span>
+              <span class="bug-badge severity severity-${bug.severity}">${bug.severity}</span>
               <span class="bug-badge ${bug.status}">${bug.status}</span>
               <button class="bug-toggle" data-id="${bug.id}">
                 ${bug.status === 'open' ? '✅ Mark fixed' : '🔙 Reopen'}
@@ -94,7 +124,6 @@ function render(): void {
     </div>
   `
 
-  // re-wire events after innerHTML
   wireEvents()
 }
 
@@ -116,15 +145,23 @@ function wireEvents(): void {
     }
 
     error = ''
-    bugs.push({ id: nextId++, title, status: statusEl.value as BugStatus })
+    const severityEl = document.getElementById('bug-severity') as HTMLSelectElement
+    bugs.push({ id: nextId++, title, status: statusEl.value as BugStatus, severity: severityEl.value as Severity })
     titleEl.value = ''
     saveBugs()
     render()
   })
 
-  document.querySelectorAll('.filter-btn').forEach(btn => {
+  document.querySelectorAll('.filter-btn[data-status]').forEach(btn => {
     btn.addEventListener('click', () => {
-      filter = (btn as HTMLButtonElement).dataset.filter as Filter
+      statusFilter = (btn as HTMLButtonElement).dataset.status as StatusFilter
+      render()
+    })
+  })
+
+  document.querySelectorAll('.filter-btn[data-severity]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      severityFilter = (btn as HTMLButtonElement).dataset.severity as SeverityFilter
       render()
     })
   })
