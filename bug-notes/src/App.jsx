@@ -1,8 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
+const STORAGE_KEY = 'bug-notes'
+
+function loadBugs() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
 function App() {
-  const [bugs, setBugs] = useState([])
+  const [bugs, setBugs] = useState(loadBugs)
   const [title, setTitle] = useState('')
   const [status, setStatus] = useState('open')
   const [filter, setFilter] = useState('all')
@@ -20,6 +31,10 @@ function App() {
     setTitle('')
     setStatus('open')
   }
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bugs))
+  }, [bugs])
 
   function toggleBug(id) {
     setBugs(prev =>
@@ -82,8 +97,10 @@ function App() {
         </button>
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="empty">No bugs to show. 🎉</p>
+      {bugs.length === 0 ? (
+        <p className="empty">No bugs yet — add one above! 🐛</p>
+      ) : filtered.length === 0 ? (
+        <p className="empty">No {filter} bugs to show. 🎉</p>
       ) : (
         <ul className="bug-list">
           {filtered.map(bug => (
