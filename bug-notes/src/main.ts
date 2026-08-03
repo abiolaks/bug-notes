@@ -11,9 +11,25 @@ interface Bug {
 }
 
 // ── State ──────────────────────────────────────────
+const STORAGE_KEY = 'bug-notes'
+
 let bugs: Bug[] = []
 let nextId = 1
 let filter: Filter = 'all'
+
+function loadBugs(): void {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return
+    const data = JSON.parse(raw)
+    bugs = data.bugs ?? []
+    nextId = data.nextId ?? 1
+  } catch { /* corrupted data — start fresh */ }
+}
+
+function saveBugs(): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ bugs, nextId }))
+}
 
 // ── DOM refs (lazy – grabbed after render) ────────
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -57,9 +73,11 @@ function render(): void {
       </div>
 
       <ul class="bug-list">
-        ${filtered.length === 0
-          ? '<li class="bug-empty">No bugs here 🎉</li>'
-          : filtered.map(bug => `
+        ${bugs.length === 0
+          ? '<li class="bug-empty">No bug notes yet — add one above 👆</li>'
+          : filtered.length === 0
+            ? '<li class="bug-empty">No bugs match this filter</li>'
+            : filtered.map(bug => `
             <li class="bug-item ${bug.status}">
               <span class="bug-title-text">${escapeHtml(bug.title)}</span>
               <span class="bug-badge ${bug.status}">${bug.status}</span>
@@ -88,6 +106,7 @@ function wireEvents(): void {
 
     bugs.push({ id: nextId++, title, status: statusEl.value as BugStatus })
     titleEl.value = ''
+    saveBugs()
     render()
   })
 
@@ -104,6 +123,7 @@ function wireEvents(): void {
       const bug = bugs.find(b => b.id === id)
       if (bug) {
         bug.status = bug.status === 'open' ? 'fixed' : 'open'
+        saveBugs()
         render()
       }
     })
@@ -118,4 +138,5 @@ function escapeHtml(str: string): string {
 }
 
 // ── Go ─────────────────────────────────────────────
+loadBugs()
 render()
