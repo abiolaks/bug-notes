@@ -104,6 +104,23 @@ h1 {
 }
 .bug-btn:hover { opacity: 0.85; }
 
+.bug-error {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  .bug-error {
+    color: #fca5a5;
+    background: #451a1a;
+    border-color: #7f1d1d;
+  }
+}
+
 /* ── Filters ────────────────────────────── */
 .bug-filters {
   display: flex;

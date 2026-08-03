@@ -16,6 +16,7 @@ const STORAGE_KEY = 'bug-notes'
 let bugs: Bug[] = []
 let nextId = 1
 let filter: Filter = 'all'
+let error = ''
 
 function loadBugs(): void {
   try {
@@ -59,6 +60,8 @@ function render(): void {
         </select>
         <button type="submit" class="bug-btn">Add</button>
       </form>
+
+      ${error ? `<p class="bug-error">${error}</p>` : ''}
 
       <div class="bug-filters">
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">
@@ -104,6 +107,15 @@ function wireEvents(): void {
     const title = titleEl.value.trim()
     if (!title) return
 
+    // duplicate detection (case‑insensitive)
+    const lower = title.toLowerCase()
+    if (bugs.some(b => b.title.toLowerCase() === lower)) {
+      error = `"${title}" is already tracked`
+      render()
+      return
+    }
+
+    error = ''
     bugs.push({ id: nextId++, title, status: statusEl.value as BugStatus })
     titleEl.value = ''
     saveBugs()
